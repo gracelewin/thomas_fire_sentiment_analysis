@@ -226,6 +226,73 @@ head(textstat_polarity(tokens, data_dictionary_LSD2015, fun = sent_logit))
 
 ```
 
+```{r cleaning_tweets}
+tweets <- tibble(text = data$Title,
+                  id = seq(1:length(data$Title)),
+                 date = as.Date(data$Date,
+                                '%m/%d/%y'),
+                 sentiment = data$Sentiment,
+                 emotion = data$Emotion) %>% 
+  mutate(text = str_replace(string = text,
+                            pattern = "http.*[:space:]",
+                            replacement = ""),
+         text = str_replace(string = text,
+                            pattern = "http.*$",
+                            replacement = ""),
+         text = str_replace(string = text,
+                            pattern = "@.*[:space:]",
+                            replacement = ""),
+         text = str_replace(string = text,
+                            pattern = "@.*$",
+                            replacement = ""),
+         text = str_replace_all(string = text,
+                               pattern = "rt",
+                               replacement = ""),
+         text = str_to_lower(text))
+
+tweets$text <- iconv(tweets$text, 
+                     "latin1", 
+                     "ASCII", 
+                     sub="")
+```
+
+```{r}
+#tokenize tweets to individual words
+words <- tweets %>%
+  select(id, date, text) %>%
+  unnest_tokens(output = word, input = text, token = "words") %>%
+  anti_join(stop_words, by = "word") %>%
+  left_join(bing_sent, by = "word") %>%
+  left_join(
+    tribble(
+      ~sentiment, ~sent_score,
+      "positive", 1,
+      "negative", -1),
+    by = "sentiment")
+
+```
+
+```{r}
+ten_words <- words %>% 
+  group_by(date, word) %>% 
+  summarise(count = n()) %>% 
+  group_by(date) %>% 
+  slice_max(count, 
+            n = 10,
+            with_ties = FALSE) %>% 
+  ggplot(aes(x = count,
+             y = word)) +
+  geom_col() +
+  facet_wrap(~date, scales = "free") +
+  guides(fill = "none") +
+  labs(x = "Number of Times Word Occurs",
+       y = "",
+       title = "Top 10 Words per Day")
+
+
+ten_words
+```
+
 ### Assignment
 
 You will use the tweet data from class today for each part of the following assignment.
