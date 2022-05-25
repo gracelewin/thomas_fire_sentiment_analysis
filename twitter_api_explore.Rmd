@@ -1,0 +1,119 @@
+---
+title: "twitter_api_developer"
+author: "Steven Cognac"
+date: '2022-05-04'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#library(httr)
+library(twitteR)
+library(jsonlite)
+library(tidyverse)
+library(here)
+require(httr)
+```
+
+https://github.com/gracelewin/thomas_fire_sentiment_analysis
+
+token setup
+
+
+```{r token_setup}
+consumer_key <- 'XXXXXXXXXXXXXX'
+consumer_secret <- 'XXXXXXXXXXXXXX'
+access_token <- 'XXXXXXXXXXXXXX'
+access_secret <- 'XXXXXXXXXXXXXX'
+```
+
+
+```{r authentication}
+
+setup_twitter_oauth(consumer_key, consumer_secret, access_token, access_secret)
+
+```
+
+
+```{r tweet_location}
+{
+   "place": {
+     "id": "fd70c22040963ac7",
+     "url": "https:\/\/api.twitter.com\/1.1\/geo\/id\/fd70c22040963ac7.json",
+     "place_type": "city",
+     "name": "Boulder",
+     "full_name": "Boulder, CO",
+     "country_code": "US",
+     "country": "United States",
+     "contained_within": [
+
+     ],
+     "bounding_box": {
+       "type": "Polygon",
+       "coordinates": [
+         [
+           [-105.301758, 39.964069],
+           [-105.301758, 40.094551],
+           [-105.178142, 40.094551],
+           [-105.178142, 39.964069]
+         ]
+       ]
+     },
+     "attributes": {}
+   }
+}
+```
+
+
+```{r}
+Sys.setenv(BEARER_TOKEN = here("tokens/twitter_bearer_token"))
+headers = c(`Authorization` = sprintf('Bearer %s', bearer_token))
+params = list(`query` = 'from:TwitterDev')
+
+response <-
+  httr::GET(url = 'https://api.twitter.com/2/tweets/search/recent',
+            httr::add_headers(.headers = headers),
+            query = 'from:TwitterDev')
+
+print(response)
+recent_search_body <-
+  content(
+    response,
+    as = 'parsed',
+    type = 'application/json',
+    simplifyDataFrame = TRUE
+  )
+
+write.csv(recent_search_body, 'response_r.csv')
+```
+
+
+
+
+
+
+
+
+```{r}
+Sys.setenv(BEARER_TOKEN = here("tokens/twitter_bearer_token"))
+```
+
+
+```{r}
+bearer_token <- Sys.getenv(here("tokens/twitter_bearer_token.txt"))
+headers <- c(`Authorization` = sprintf('Bearer %s', bearer_token))
+```
+
+set up profile
+```{r}
+params <- list(`user.fields` = 'description',
+               `expansions` = 'pinned_tweet_id')
+```
+
+```{r}
+bearer_token <- Sys.getenv("BEARER_TOKEN")
+headers <- c(`Authorization` = sprintf('Bearer %s', bearer_token))
+params <- list(`query` = 'from:TwitterDev')
+```
+
