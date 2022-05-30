@@ -26,8 +26,8 @@ library(here)
 Read in the data
 
 ```{r}
-tweet_test <- read_csv(file = here("data/d01_am.csv"),
-                       delim = ",")
+# tweet_test <- read_csv(file = here("data/d01_am.csv"),
+#                        delim = ",")
 
 all_tweet_files <- list.files(path = here("data/"),
                               pattern = "*.csv")
@@ -86,7 +86,8 @@ words <- tweets %>%
       ~sentiment, ~sent_score,
       "positive", 1,
       "negative", -1),
-    by = "sentiment")
+    by = "sentiment") %>% 
+  filter(word != "rt")
 ```
 
 ```{r sentiment_calculations}
@@ -268,9 +269,84 @@ words <- tweets %>%
       ~sentiment, ~sent_score,
       "positive", 1,
       "negative", -1),
-    by = "sentiment")
+    by = "sentiment")  %>% 
+  filter(word != "rt")
 
 ```
+
+```{r}
+ten_words <- words %>% 
+  group_by(date, word) %>% 
+  summarise(count = n()) %>% 
+  group_by(date) %>% 
+  arrange(count) %>% 
+  slice_max(count, 
+            n = 10,
+            with_ties = FALSE) %>% 
+  ggplot(aes(x = count,
+             y = word)) +
+  geom_col() +
+  facet_wrap(~date, scales = "free") +
+  guides(fill = "none") +
+  labs(x = "Number of Times Word Occurs",
+       y = "",
+       title = "Top 10 Words per Day")
+
+
+ten_words
+```
+### 1.  Think about how to further clean a twitter data set. Let's assume that the mentions of twitter accounts is not useful to us. Remove them from the text field of the tweets tibble.
+
+```{r cleaning_tweets}
+tweets <- tibble(text = data$Title,
+                  id = seq(1:length(data$Title)),
+                 date = as.Date(data$Date,
+                                '%m/%d/%y'),
+                 sentiment = data$Sentiment,
+                 emotion = data$Emotion) %>% 
+  mutate(text = str_replace(string = text,
+                            pattern = "http.*[:space:]",
+                            replacement = ""),
+         text = str_replace(string = text,
+                            pattern = "http.*$",
+                            replacement = ""),
+         text = str_replace(string = text,
+                            pattern = "@.*[:space:]",
+                            replacement = ""),
+         text = str_replace(string = text,
+                            pattern = "@.*$",
+                            replacement = ""),
+         text = str_to_lower(text))
+
+tweets$text <- iconv(tweets$text, 
+                     "latin1", 
+                     "ASCII", 
+                     sub="")
+```
+
+
+### 2.  Compare the ten most common terms in the tweets per day.  Do you notice anything interesting?
+
+\noindent Make dataframe with each word in different row, remove all stop words, add in the `bing` sentiment, and a numerical sentiment score. 
+
+```{r}
+#tokenize tweets to individual words
+words <- tweets %>%
+  select(id, date, text) %>%
+  unnest_tokens(output = word, input = text, token = "words") %>%
+  anti_join(stop_words, by = "word") %>%
+  left_join(bing_sent, by = "word") %>%
+  left_join(
+    tribble(
+      ~sentiment, ~sent_score,
+      "positive", 1,
+      "negative", -1),
+    by = "sentiment") %>% 
+  filter(word != "rt")
+
+```
+
+\noindent Make a slice of the top ten words of each day then make a plot.
 
 ```{r}
 ten_words <- words %>% 
@@ -293,17 +369,16 @@ ten_words <- words %>%
 ten_words
 ```
 
-### Assignment
+\noindent The day the report is released and for a couple of days after there is a great increase in the number of mentions of IPCC because the counts are much higher for all words. IPCC, report, and climate is high throughout the dates but this is expected.
 
-You will use the tweet data from class today for each part of the following assignment.
+### 3.  Adjust the wordcloud in the "wordcloud" chunk by coloring the positive and negative words so they are identifiable.
 
-1.  Think about how to further clean a twitter data set. Let's assume that the mentions of twitter accounts is not useful to us. Remove them from the text field of the tweets tibble.
-
-2.  Compare the ten most common terms in the tweets per day.  Do you notice anything interesting?
-
-3.  Adjust the wordcloud in the "wordcloud" chunk by coloring the positive and negative words so they are identifiable.
-
-4. Let's say we are interested in the most prominent entities in the Twitter discussion.  Which are the top 10 most tagged accounts in the data set. Hint: the "explore_hashtags" chunk is a good starting point.
-
-5. The Twitter data download comes with a variable called "Sentiment" that must be calculated by Brandwatch.  Use your own method to assign each tweet a polarity score (Positive, Negative, Neutral) and compare your classification to Brandwatch's (hint: you'll need to revisit the "raw_tweets" data frame).   
+```{r}
+words %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(word, sentiment, sort = TRUE) %>%
+  acast(word ~ sentiment, value.var = "n", fill = 0) %>%
+  comparison.cloud(colors = c("red4", "darkgreen"),
+                   max.words = 100)
+```
 
