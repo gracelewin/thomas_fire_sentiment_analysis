@@ -24,6 +24,7 @@ library(lubridate)
 library(wordcloud) #visualization of common words in the data set
 library(reshape2)
 library(here)
+library(wesanderson)
 ```
 
 Read in the data
@@ -110,6 +111,7 @@ words <- tweets %>%
       "negative", -1),
     by = "sentiment") %>% 
   filter(word != "rt") # remove rt as a word
+
 ```
 
 ```{r sentiment_calculations}
@@ -229,23 +231,6 @@ head(textstat_polarity(tokens, data_dictionary_LSD2015, fun = sent_logit))
 
 
 ```{r}
-#tokenize tweets to individual words
-words <- tweets %>%
-  select(id, date, text) %>%
-  unnest_tokens(output = word, input = text, token = "words") %>%
-  anti_join(stop_words, by = "word") %>%
-  left_join(bing_sent, by = "word") %>%
-  left_join(
-    tribble(
-      ~sentiment, ~sent_score,
-      "positive", 1,
-      "negative", -1),
-    by = "sentiment")  %>% 
-  filter(word != "rt")
-
-```
-
-```{r}
 ten_words <- words %>% 
   group_by(date, word) %>% 
   summarise(count = n()) %>% 
@@ -333,6 +318,20 @@ ggplot(data = sent_word_count) +
   geom_line(aes(x = date, y = percent, color = sentiment)) +
   labs(title = "Sentiment Before and During Fire",
        y = "Percent",
-       x = "Date") 
+       x = "Date") +
+  scale_color_manual(values = c("#A6CEE3",
+                                "#1F78B4",
+                                "#B2DF8A",
+                                "#33A02C",
+                                "#FB9A99",
+                                "#E31A1C",
+                                "#FDBF6F",
+                                "#FF7F00",
+                                "#CAB2D6",
+                                "#6A3D9A")) +
+  theme_minimal() + 
+  geom_vline(xintercept = as.Date("2017-12-05"),
+             linetype = "dashed",
+             size = 1)
 ```
 
