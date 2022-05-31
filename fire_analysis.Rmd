@@ -1,9 +1,14 @@
 ---
 title: "Thomas Fire Sentiment Analysis"
+author: "Joe Desacaro, Connor Flynn, Grace Lewin, Shale Hunter, Steven Cognac"
+date: '`r Sys.Date()`'
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 ```
 
 #### Thomas Fire Sentiment Analysis - Twitter
